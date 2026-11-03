@@ -1,0 +1,26 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="dark">
+  <title>The Ashen Crown</title>
+  <meta name="description" content="A narrative strategy game: realm council, branching story, grid battles.">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E%F0%9F%91%91%3C/text%3E%3C/svg%3E">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body data-pack="fantasy" data-mood="night">
+  <div class="ash" aria-hidden="true"></div>
+  <div id="app"></div>
+  <div id="modal"></div>
+  <div id="toast" role="status" aria-live="polite"></div>
+  <noscript><p style="padding:2rem;color:#ddd">The Ashen Crown needs JavaScript to run.</p></noscript>
+
+  <!-- Plain scripts (no modules) so the game also runs when index.html is opened straight from disk. -->
+  <script src="js/battle.js"></script>
+  <script src="js/engine.js"></script>
+  <script src="data/fantasy.js"></script>
+  <script src="data/scifi.js"></script>
+  <script src="js/ui.js"></script>
+</body>
+</html>
