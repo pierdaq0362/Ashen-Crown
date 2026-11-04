@@ -42,9 +42,10 @@
 
   function hud() {
     const p = pack();
-    const res = Object.entries(p.resources).map(([k, d]) => `<span class="res" title="${esc(d.name)}"><i>${d.icon}</i><b>${S.res[k] || 0}</b><small>${esc(d.name)}</small></span>`).join('');
+    const res = E.realm(S).map((r) => `<span class="res" title="${esc(r.name + (r.tier ? ' · ' + r.tier.name : '') + (r.desc ? ': ' + r.desc : ''))}"><i>${r.icon}</i><b>${r.value}</b><small>${esc(r.tier ? r.tier.name : r.name)}</small></span>`).join('');
+    const goal = S.goal ? `<div class="goal"><b>Goal</b> ${esc(S.goal)}</div>` : '';
     return `<header class="hud"><div class="brand">${esc(p.title)}</div><div class="resbar">${res}</div>
-      <div class="hudbtns"><span class="day">Day ${S.day}</span><button data-act="journal">Journal</button><button data-act="menu">Menu</button></div></header>`;
+      <div class="hudbtns"><span class="day">Day ${S.day}</span><button data-act="journal">Journal</button><button data-act="menu">Menu</button></div></header>${goal}`;
   }
 
   /* ---------- screens ---------- */
@@ -55,12 +56,13 @@
     document.body.dataset.mood = sc.mood || 'night';
     if (S.battle) return renderBattle();
     BS = null;
+    if (S.reply) return renderReply();
     if (S.council) return renderCouncil(sc);
     return renderScene(sc);
   }
 
   function renderTitle() {
-    const p = AC.packs[PACK], has = !!E.peek('auto');
+    const p = AC.packs[PACK], has = !!E.load('auto'), old = !has && !!E.peek('auto');
     app.innerHTML = `<main class="title">
       <h1>${esc(p.title)}</h1><p class="sub">${esc(p.subtitle || '')}</p><div class="flame"></div>
       <p class="blurb">${esc(p.blurb || 'The Ember is out and the dead are walking. You hold a ruined keep and a dying king’s last order. What you decide between battles shapes who stands beside you in them.')}</p>
@@ -72,7 +74,7 @@
         <button class="btn quiet" data-act="menu">Load or import a save</button>
         <button class="btn quiet" data-act="help">How to play</button>
       </div>
-      <small>Saves stay in this browser.</small></main>`;
+      <small>${old ? 'An older save from before the Chapter One rewrite was found. It cannot be loaded, so please start a new game. ' : ''}Saves stay in this browser. Version 0.2</small></main>`;
   }
 
   function changesHtml() {
@@ -99,6 +101,14 @@
       }).join('') + '</div>';
     } else if (sc.next !== undefined) foot = '<div class="choices"><button class="choice go" data-act="next">Continue</button></div>';
     app.innerHTML = hud() + `<main class="stage">${stageHead(sc)}${changesHtml()}${proseHtml(sc)}${foot}</main>`;
+  }
+
+  function renderReply() {
+    const r = S.reply;
+    document.body.dataset.mood = r.mood || 'night';
+    app.innerHTML = hud() + `<main class="stage reply"><div class="when">Day ${S.day}</div><h2>${esc(r.title || '')}</h2>${changesHtml()}
+      <div class="prose">${E.replyParagraphs(S).map((t) => `<p>${rich(t)}</p>`).join('')}</div>
+      <div class="choices"><button class="choice go" data-act="next">Continue</button></div></main>`;
   }
 
   function endPanel() {
@@ -135,9 +145,15 @@
     if (tab === 'company') {
       body = Object.entries(S.party).map(([id, m]) => {
         const c = p.companions[id];
+        const bonds = (c.bonds || []).map((b) => `<li class="${m.trust >= b.at ? 'on' : ''}">${m.trust >= b.at ? '✓' : '🔒'} <b>Trust ${b.at}</b> ${esc(b.text)}</li>`).join('');
         return `<div class="member"><span class="g">${c.glyph}</span><div><b>${esc(c.name)}</b><span class="pips" title="Trust ${m.trust}/10">${pips(m.trust)}</span></div>
-          <div class="meta">${esc(p.units[c.unit].name)}${S.wounded[id] ? ' · wounded' : ''}</div><p>${esc(c.blurb)}</p></div>`;
+          <div class="meta">${esc(p.units[c.unit].name)} · Trust ${m.trust}${S.wounded[id] ? ' · wounded' : ''}</div><p>${esc(c.blurb)}</p>${bonds ? `<ul class="bonds">${bonds}</ul>` : ''}</div>`;
       }).join('') || '<p>No companions yet.</p>';
+    } else if (tab === 'realm') {
+      body = E.realm(S).map((r) => {
+        const tiers = (p.resources[r.k].tiers || []).map((t) => `<li class="${r.tier && r.tier.at === t.at ? 'on' : ''}"><b>${esc(t.name)}</b> (${t.at}+) ${esc(t.text)}</li>`).join('');
+        return `<div class="member"><span class="g">${r.icon}</span><div><b>${esc(r.name)}: ${r.value}${r.tier ? ' · ' + esc(r.tier.name) : ''}</b></div><p>${esc(r.desc)}</p>${tiers ? `<ul class="bonds">${tiers}</ul>` : ''}</div>`;
+      }).join('');
     } else if (tab === 'chronicle') {
       body = S.chronicle.length ? '<ul class="chron">' + S.chronicle.map((c) => `<li><b>Day ${c.day}</b>${esc(c.text)}</li>`).join('') + '</ul>' : '<p>Nothing recorded yet.</p>';
     } else {
@@ -145,7 +161,7 @@
       body = items.length ? '<dl class="codex">' + items.map((c) => `<dt>${esc(c.title)}</dt><dd>${esc(c.text)}</dd>`).join('') + '</dl>' : '<p>Nothing learned yet.</p>';
     }
     const t = (id, label) => `<button data-act="tab" data-tab="${id}" aria-selected="${tab === id}">${label}</button>`;
-    showModal(`<h2>Journal</h2><div class="tabs">${t('company', 'Company')}${t('chronicle', 'Chronicle')}${t('codex', 'Codex')}</div>${body}
+    showModal(`<h2>Journal</h2><div class="tabs">${t('company', 'Company')}${t('realm', 'Realm')}${t('chronicle', 'Chronicle')}${t('codex', 'Codex')}</div>${body}
       <div class="row" style="margin-top:18px"><button class="btn" data-act="closeModal">Close</button></div>`);
   }
 
@@ -221,7 +237,8 @@
   }
 
   function showIntro() {
-    const notes = BS.notes.length ? '<ul class="notes">' + BS.notes.map((n) => `<li>${esc(n)}</li>`).join('') + '</ul>' : '';
+    const all = BS.notes.concat((BS.bonds || []).map((b) => 'Bond · ' + b));
+    const notes = all.length ? '<ul class="notes">' + all.map((n) => `<li>${esc(n)}</li>`).join('') + '</ul>' : '';
     $('#overlay').innerHTML = `<div class="overlay"><div class="sheet"><h2>${esc(BS.name)}</h2><p>${esc(BS.def.intro || '')}</p>${notes}
       <p style="margin-top:12px"><strong>Objective:</strong> ${esc(B.objectiveText(BS))}</p>
       <div class="row" style="margin-top:16px"><button class="btn primary" data-act="begin">Begin the battle</button><button class="btn quiet" data-act="help">How to fight</button></div></div></div>`;
@@ -488,7 +505,7 @@
     continue: () => loadState(E.load('auto')),
     choose: (el) => { E.choose(S, +el.dataset.i); commit(); },
     next: () => { E.advance(S); commit(); },
-    action: (el) => { E.doAction(S, el.dataset.id); commit({ keep: true }); },
+    action: (el) => { E.doAction(S, el.dataset.id); commit({ keep: !!S.council }); },
     conclude: () => { E.concludeCouncil(S); commit(); },
     journal: () => openJournal('company'),
     tab: (el) => openJournal(el.dataset.tab),

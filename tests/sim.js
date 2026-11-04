@@ -7,14 +7,14 @@
 'use strict';
 const path = require('path');
 const root = path.join(__dirname, '..');
-for (const f of ['js/battle.js', 'js/engine.js', 'data/fantasy.js', 'data/scifi.js']) require(path.join(root, f));
+require('./load.js');
 const AC = globalThis.AC, E = AC.Engine, B = AC.Battle;
 const RUNS = +process.argv[2] || 1500;
 
 const pick = (a) => a[Math.floor(Math.random() * a.length)];
 const SMART = {
-  winter: ['fortify', 'muster', 'train', 'scout', 'feast'],
-  barrow: ['consecrate', 'muster', 'scout_barrows', 'train', 'feast'],
+  winter: ['fortify', 'muster', 'talk_dunstan', 'talk_ansel', 'talk_isolde', 'train', 'scout', 'feast'],
+  barrow: ['consecrate', 'talk_ansel', 'talk_dunstan', 'talk_kell', 'talk_isolde', 'muster', 'scout_barrows', 'train', 'feast'],
   station: ['reroute', 'hack', 'wake', 'scrounge'],
 };
 
@@ -75,7 +75,8 @@ function play(mode) {
   const S = E.newState(Math.random() < 0.02 ? 'scifi' : 'fantasy', 'Sim', { easy: !!process.env.EASY });
   const trail = [], battles = [];
   let steps = 0;
-  while (steps++ < 400) {
+  while (steps++ < 900) {
+    if (S.reply) { E.advance(S); continue; }
     const sc = E.scene(S);
     trail.push(S.pack + ':' + S.scene);
     if (S.battle) {
@@ -86,13 +87,12 @@ function play(mode) {
     }
     if (S.council) {
       const order = mode === 'smart' ? SMART[S.council.id] || [] : [];
-      while (S.council.ap > 0) {
-        const acts = E.councilActions(S).filter((x) => x.enabled);
-        if (!acts.length) break;
+      const acts = S.council.ap > 0 ? E.councilActions(S).filter((x) => x.enabled) : [];
+      if (acts.length && !(mode === 'random' && Math.random() < 0.15)) {
         let a = null;
         for (const id of order) { a = acts.find((x) => x.id === id); if (a) break; }
         E.doAction(S, (a || pick(acts)).id);
-        if (mode === 'random' && Math.random() < 0.15) break;
+        continue;
       }
       E.concludeCouncil(S);
       continue;

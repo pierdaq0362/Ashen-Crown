@@ -8,6 +8,12 @@
   'use strict';
   const AC = (globalThis.AC = globalThis.AC || {});
   AC.packs = AC.packs || {};
+  // Chapters live in their own files: AC.addTo('fantasy', { scenes: {...}, battles: {...}, codex: [...] })
+  AC.addTo = function (packId, part) {
+    const p = AC.packs[packId];
+    if (!p) throw new Error('addTo: unknown pack ' + packId);
+    for (const [k, v] of Object.entries(part)) p[k] = Array.isArray(v) ? (p[k] || []).concat(v) : Object.assign(p[k] || {}, v);
+  };
 
   const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
   const toArr = (x) => (x == null ? [] : Array.isArray(x) ? x : [x]);
@@ -89,6 +95,7 @@
       if (e.leave && s.party[e.leave]) { delete s.party[e.leave]; out.changes.push(p.companions[e.leave].name + ' leaves'); }
       if (e.chron) s.chronicle.push({ day: s.day, text: fmt(e.chron, s) });
       if (e.day) s.day += e.day;
+      if (e.goal !== undefined) s.goal = e.goal ? fmt(e.goal, s) : '';
       if (e.level) { s.level = clamp(s.level + e.level, 1, 6); out.changes.push('★ Your company grows stronger'); }
       if (e.bg) { const b = p.backgrounds[e.bg]; s.bg = e.bg; s.title = b.title; s.flags['bg_' + e.bg] = true; applyEffects(s, b.fx, out); }
       if (e.travel) out.travel = e.travel;
@@ -101,9 +108,9 @@
     const p = AC.packs[packId];
     if (!p) throw new Error('Unknown pack ' + packId);
     const s = {
-      v: 1, easy: !!(opts && opts.easy), pack: packId, name: (name || '').trim() || 'Wanderer', bg: null, title: p.defaultTitle || 'Warden', day: 1,
+      v: 2, easy: !!(opts && opts.easy), pack: packId, name: (name || '').trim() || 'Wanderer', bg: null, title: p.defaultTitle || 'Warden', day: 1,
       seed: (Date.now() & 0x7fffffff) ^ 0x5bd1e995, scene: null, res: {}, flags: {}, party: {}, wounded: {}, level: 1,
-      chronicle: [], visited: {}, council: null, returnTo: null, queue: [], battle: null, changes: [], reachedEnd: false,
+      chronicle: [], visited: {}, council: null, returnTo: null, queue: [], goal: '', reply: null, parked: null, battle: null, changes: [], reachedEnd: false,
     };
     for (const [k, d] of Object.entries(p.resources)) s.res[k] = d.start || 0;
     enterScene(s, p.start);
@@ -122,20 +129,24 @@
   function enterScene(s, id) {
     const p = pack(s), sc = p.scenes[id];
     if (!sc) throw new Error('Unknown scene "' + id + '" in pack ' + s.pack);
-    s.scene = id; s.visited[id] = (s.visited[id] || 0) + 1; s.changes = []; s.battle = null; s.council = null;
+    s.scene = id; s.visited[id] = (s.visited[id] || 0) + 1; s.changes = []; s.battle = null; s.council = null; s.reply = null;
     s.reachedEnd = !!sc.end;
     if (sc.enter) {
       const r = applyEffects(s, sc.enter);
       s.changes = r.changes;
       if (r.travel) { const pre = r.changes; switchPack(s, r.travel.pack); enterScene(s, r.travel.scene); s.changes = pre.concat(s.changes); return pack(s).scenes[s.scene]; }
     }
-    if (sc.council) s.council = { id: sc.council, ap: pack(s).councils[sc.council].ap || 2, used: {}, notes: [] };
+    if (sc.council) {
+      if (s.parked && s.parked.scene === id) { s.council = s.parked; s.parked = null; } // back from a side scene
+      else s.council = { id: sc.council, scene: id, ap: pack(s).councils[sc.council].ap || 2, used: {}, notes: [] };
+    }
     if (sc.battle) s.battle = { id: sc.battle };
     return sc;
   }
 
   function route(s, spec) {
     if (Array.isArray(spec)) { const hit = spec.find((r) => test(r.if, s)); spec = hit ? hit.go : null; }
+    if (spec === '@council') spec = s.parked ? s.parked.scene : null;
     if (spec === '@return') {
       if (s.queue && s.queue.length) spec = s.queue.shift();
       else { spec = s.returnTo; s.returnTo = null; }
@@ -148,6 +159,10 @@
 
   function paragraphs(s, sc) {
     return toArr(sc.text).filter((t) => typeof t === 'string' || test(t.if, s)).map((t) => fmt(typeof t === 'string' ? t : t.t, s));
+  }
+
+  function replyParagraphs(s) {
+    return toArr(s.reply.text).filter((t) => typeof t === 'string' || test(t.if, s)).map((t) => fmt(typeof t === 'string' ? t : t.t, s));
   }
 
   function choicesFor(s, sc) {
@@ -167,6 +182,13 @@
     const r = applyEffects(s, fx);
     const pre = r.changes;
     if (r.travel) { switchPack(s, r.travel.pack); enterScene(s, r.travel.scene); }
+    else if (c.reply !== undefined && c.go !== undefined) {
+      // Aftermath: show the reply first, then continue to c.go when the player presses Continue.
+      const sc = scene(s);
+      s.reply = { title: c.replyTitle || sc.title, mood: sc.mood, text: toArr(c.reply), go: c.go };
+      s.changes = pre;
+      return;
+    }
     else if (c.go !== undefined) enterScene(s, route(s, c.go));
     s.changes = pre.concat(s.changes);
   }
@@ -178,6 +200,7 @@
   }
 
   function advance(s) {
+    if (s.reply) { const r = s.reply; s.reply = null; go(s, { go: r.go }); return; }
     const sc = scene(s);
     if (sc.next === undefined) throw new Error('Scene ' + s.scene + ' has no next');
     go(s, { go: sc.next });
@@ -192,6 +215,7 @@
       const a = p.actions[id];
       if (!test(a.if, s)) return null;
       let enabled = true, reason = null;
+      if (a.need && !test(a.need, s)) { enabled = false; reason = a.needText || 'Requirement not met'; }
       if (s.council.ap <= 0) { enabled = false; reason = 'No actions left'; }
       if ((s.council.used[id] || 0) >= (a.max || 1)) { enabled = false; reason = 'Already done this council'; }
       if (a.cost) for (const [r, v] of Object.entries(a.cost)) if ((s.res[r] || 0) < v) { enabled = false; reason = 'Needs ' + v + ' ' + p.resources[r].name; }
@@ -209,6 +233,11 @@
     s.council.ap--; s.council.used[id] = (s.council.used[id] || 0) + 1;
     s.council.notes.push(fmt(a.result || a.name, s));
     s.changes = r.changes;
+    if (a.go !== undefined) { // a side scene (e.g. a conversation); the council resumes afterwards
+      s.parked = s.council; s.council = null;
+      enterScene(s, route(s, a.go));
+      s.changes = r.changes.concat(s.changes);
+    }
   }
 
   // Draw up to c.draws events: priority events first, then weighted-random from the rest.
@@ -261,6 +290,12 @@
   /* ---------- journal helpers ---------- */
   function codex(s) { return (pack(s).codex || []).filter((c) => test(c.if, s)).map((c) => ({ title: c.title, text: fmt(c.text, s) })); }
 
+  /* ---------- realm summary (resources with named tiers) ---------- */
+  function tierOf(d, v) { let t = null; for (const x of d.tiers || []) if (v >= x.at) t = x; return t; }
+  function realm(s) {
+    return Object.entries(pack(s).resources).map(([k, d]) => ({ k, icon: d.icon, name: d.name, value: s.res[k] || 0, desc: d.desc || '', tier: tierOf(d, s.res[k] || 0) }));
+  }
+
   /* ---------- save / load ---------- */
   const KEY = 'ashen-crown:';
   function storage() { try { return globalThis.localStorage || null; } catch (e) { return null; } }
@@ -273,7 +308,7 @@
     try { const raw = st.getItem(KEY + slot); return raw ? JSON.parse(raw) : null; } catch (e) { return null; }
   }
   function validate(s) {
-    if (!s || typeof s !== 'object' || s.v !== 1 || !AC.packs[s.pack] || !AC.packs[s.pack].scenes[s.scene]) return null;
+    if (!s || typeof s !== 'object' || s.v !== 2 || !AC.packs[s.pack] || !AC.packs[s.pack].scenes[s.scene]) return null;
     return s;
   }
   function load(slot) { const r = peek(slot); return r ? validate(r.state) : null; }
@@ -281,7 +316,7 @@
   function importSave(text) { try { return validate(JSON.parse(text)); } catch (e) { return null; } }
 
   AC.Engine = {
-    test, fmt, rand, applyEffects, newState, enterScene, scene, paragraphs, choicesFor, choose, advance, route,
-    councilActions, doAction, concludeCouncil, startBattle, finishBattle, codex, save, peek, load, exportSave, importSave,
+    test, fmt, rand, applyEffects, newState, enterScene, scene, paragraphs, replyParagraphs, choicesFor, choose, advance, route,
+    councilActions, doAction, concludeCouncil, realm, startBattle, finishBattle, codex, save, peek, load, exportSave, importSave,
   };
 })();

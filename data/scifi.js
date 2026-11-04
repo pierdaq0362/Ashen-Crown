@@ -2,7 +2,7 @@
  *
  * Reached by touching the Veil-stone at the end of Chapter One (or by opening index.html?pack=scifi).
  * It reuses the same engine with a different set of resources, units and terrain.
- * Companions carry over by id (maren, tamsin, isolde, kell), as echoes of themselves.
+ * Companions carry over by id (dunstan, ansel, isolde, kell), as echoes of themselves.
  */
 (function () {
   const AC = (globalThis.AC = globalThis.AC || {});
@@ -25,8 +25,8 @@
     backgrounds: {},
 
     companions: {
-      maren: { name: 'Maren Voss', unit: 'sec', glyph: '🛡️', trust: 2, blurb: 'Security chief of Cindervale Station. Armoured, unmoved, and entirely familiar.' },
-      tamsin: { name: 'Tamsin Quill', unit: 'medic', glyph: '🕯️', trust: 2, blurb: 'Systems archivist. Her little blue lantern is a handheld reactor key.' },
+      dunstan: { name: 'Dunstan Garrow', unit: 'sec', glyph: '🛡️', trust: 2, blurb: 'Security chief of Cindervale Station. Armoured, unmoved, and entirely familiar.' },
+      ansel: { name: 'Ansel Wick', unit: 'medic', glyph: '🕯️', trust: 2, blurb: 'Systems archivist, old as the station’s first logs. His little blue lantern is a handheld reactor key.' },
       isolde: { name: 'Isolde Fenn', unit: 'scout', glyph: '🏹', trust: 1, blurb: 'Runner of the outer ducts. Carries a railbow she built herself.' },
       kell: { name: 'Kell Ashworth', unit: 'tech', glyph: '🔥', trust: 1, blurb: 'Reactor-burned engineer. The glow in her eyes is not a metaphor here.' },
     },
@@ -70,7 +70,7 @@
           '#########',
         ],
         start: [[4, 5], [3, 5], [5, 5], [2, 5], [6, 5], [4, 4], [3, 4], [5, 4]],
-        roster: ['maren', 'tamsin', 'isolde', 'kell'],
+        roster: ['dunstan', 'ansel', 'isolde', 'kell'],
         maxLevies: 3,
         win: { type: 'rout' },
         units: [
@@ -93,8 +93,8 @@
         text: [
           'You wake on a floor of black glass. Above is a dome of stars, the wrong stars, and the air tastes of cold metal and old ash.',
           'A voice, flat and kind, speaks from everywhere at once. *HEARTFIRE RESERVE AT ZERO POINT THREE PERCENT. WELCOME BACK, CREW.*',
-          { if: { has: 'maren' }, t: 'Maren is already on her feet in hull-grey armour, sword replaced by something that hums. She looks at you without surprise. “Warden,” she says, then corrects herself. “Captain.”' },
-          { if: { has: 'tamsin' }, t: 'Tamsin’s lantern is a handheld reactor key. Its blue light is exactly the same.' },
+          { if: { has: 'dunstan' }, t: 'Dunstan is already on his feet in hull-grey armour, sword replaced by something that hums. He looks at you without surprise. “Warden,” he says, then corrects himself. “Captain.”' },
+          { if: { has: 'ansel' }, t: 'Ansel’s lantern is a handheld reactor key. Its blue light is exactly the same.' },
           { if: { has: 'isolde' }, t: 'Isolde is already halfway up a service duct, grinning down at you. “Finally. Somewhere with a roof worth climbing.”' },
           { if: { has: 'kell' }, t: 'Kell puts her palm against the wall and the lights flicker on for her, as though the whole station recognised the burn in her eyes.' },
         ],

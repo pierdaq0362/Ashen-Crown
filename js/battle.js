@@ -85,7 +85,8 @@
       id: def.id, name: def.name, pack, def, w, h, grid: rows.map((r) => r.split('')),
       terrain: Object.assign({}, BASE_TERRAIN, pack.terrain || {}),
       units: [], fallen: [], uidN: 0, turn: 1, phase: 'player', log: [], notes: [], pending: [],
-      result: null, winTurns: (def.win && def.win.turns) || 0, deployedLevies: 0,
+      result: null, winTurns: (def.win && def.win.turns) || 0, deployedLevies: 0, bonds: [],
+      vip: (def.lose && def.lose.unitDies) || (def.win && def.win.type === 'reach' && def.win.unit) || null,
     };
     bs.pending = (def.reinforcements || []).map((r) => Object.assign({}, r));
 
@@ -100,6 +101,18 @@
       if (fixed && fixed.immobile) stats.move = 0;
       const u = makeUnit(bs, c.unit, 'player', pos[0], pos[1], { name: c.name, glyph: c.glyph, stats, cid });
       if (fixed && fixed.immobile) u.immobile = true;
+      // Trust bonds: perks a companion earns as their trust in you grows.
+      const trust = (gs.party[cid] && gs.party[cid].trust) || 0;
+      for (const b of c.bonds || []) {
+        if (trust < b.at) continue;
+        if (b.hp) { u.maxHp += b.hp; u.hp += b.hp; }
+        if (b.atk) u.atk += b.atk;
+        if (b.def) u.def += b.def;
+        if (b.move && !u.immobile) u.move += b.move;
+        if (u.skill && b.cooldown) u.skill.cooldown = Math.max(0, (u.skill.cooldown || 0) + b.cooldown);
+        if (u.skill && b.power) { u.skill.power += b.power; u.skill.desc += ' (+' + b.power + ' from trust)'; }
+        bs.bonds.push(c.name + ': ' + b.text);
+      }
       if (gs.wounded && gs.wounded[cid]) u.hp = Math.max(1, Math.ceil(u.maxHp * 0.6));
     }
     const lv = pack.levy;
@@ -409,7 +422,7 @@
         const dmg = damageFor(bs, u, t.x, t.y, h, h.x, h.y), kills = dmg >= h.hp;
         let ctr = 0;
         if (!kills && inRange(h, h.x, h.y, t.x, t.y)) ctr = damageFor(bs, h, h.x, h.y, u, t.x, t.y);
-        let s = dmg * 2 + (kills ? 10 : 0) + (h.skill ? 1.5 : 0) + (h.role === 'tamsin' ? 4 : 0) - ctr * 1.4 + defb * 1.2;
+        let s = dmg * 2 + (kills ? 10 : 0) + (h.skill ? 1.5 : 0) + (bs.vip && h.role === bs.vip ? 4 : 0) - ctr * 1.4 + defb * 1.2;
         if (u.range[1] > 1) s += (Math.abs(t.x - h.x) + Math.abs(t.y - h.y)) * 0.5;
         consider(s, { type: 'attack', t, h });
       }

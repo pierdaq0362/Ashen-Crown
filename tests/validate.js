@@ -5,7 +5,7 @@
 'use strict';
 const path = require('path');
 const root = path.join(__dirname, '..');
-for (const f of ['js/battle.js', 'js/engine.js', 'data/fantasy.js', 'data/scifi.js']) require(path.join(root, f));
+require('./load.js');
 const AC = globalThis.AC, E = AC.Engine, B = AC.Battle;
 
 let errors = 0, warns = 0;
@@ -13,7 +13,7 @@ const err = (m) => { errors++; console.log('ERROR   ' + m); };
 const warn = (m) => { warns++; console.log('warning ' + m); };
 const toArr = (x) => (x == null ? [] : Array.isArray(x) ? x : [x]);
 
-const FX_KEYS = ['res', 'set', 'unset', 'inc', 'trust', 'join', 'leave', 'chron', 'day', 'level', 'bg', 'travel', 'when', 'then', 'else'];
+const FX_KEYS = ['res', 'set', 'unset', 'inc', 'trust', 'join', 'leave', 'chron', 'day', 'level', 'bg', 'travel', 'goal', 'when', 'then', 'else'];
 const COND_KEYS = ['any', 'all', 'not', 'res', 'trust', 'n', 'has', 'visited', 'wounded', 'gte', 'gt', 'lte', 'lt', 'eq'];
 
 for (const [pid, p] of Object.entries(AC.packs)) {
@@ -59,7 +59,7 @@ for (const [pid, p] of Object.entries(AC.packs)) {
   const route = (spec, ctx, from) => {
     if (spec === undefined) return;
     if (Array.isArray(spec)) { spec.forEach((r) => { checkCond(r.if, ctx); route(r.go, ctx, from); }); return; }
-    if (spec === '@return') return;
+    if (spec === '@return' || spec === '@council') return;
     if (typeof spec !== 'string' || !p.scenes[spec]) { err(where(`${ctx}: route to unknown scene "${spec}"`)); return; }
     edge(from, pid + ':' + spec);
   };
@@ -74,7 +74,8 @@ for (const [pid, p] of Object.entries(AC.packs)) {
 
   // ----- actions & councils -----
   for (const [id, a] of Object.entries(p.actions)) {
-    checkCond(a.if, `action ${id}`); checkFx(a.fx, `action ${id}`, pid + ':?');
+    checkCond(a.if, `action ${id}`); checkCond(a.need, `action ${id}`); checkFx(a.fx, `action ${id}`, pid + ':?');
+    if (a.go !== undefined) route(a.go, `action ${id}`, pid + ':?action:' + id);
     for (const r of Object.keys(a.cost || {})) if (!p.resources[r]) err(where(`action ${id}: unknown resource "${r}" in cost`));
   }
   for (const [id, c] of Object.entries(p.councils)) {
@@ -106,13 +107,21 @@ for (const [pid, p] of Object.entries(AC.packs)) {
     }
     if (sc.council) {
       if (!p.councils[sc.council]) err(where(`${ctx}: unknown council "${sc.council}"`));
-      else { edge(from, pid + ':' + p.councils[sc.council].then); for (const e of p.councils[sc.council].pool || []) edge(from, pid + ':' + e.scene); }
+      else { edge(from, pid + ':' + p.councils[sc.council].then); for (const e of p.councils[sc.council].pool || []) edge(from, pid + ':' + e.scene); for (const a of p.councils[sc.council].actions) edge(from, pid + ':?action:' + a); }
     }
     (sc.choices || []).forEach((c, i) => {
       const cc = `${ctx} choice ${i + 1}`;
       if (!c.t) err(where(`${cc}: no text`));
       checkCond(c.if, cc); checkCond(c.need, cc); checkFx(c.fx, cc, from); route(c.go, cc, from);
       if (c.go === undefined && !toArr(c.fx).some((e) => e.travel)) err(where(`${cc}: no "go" target`));
+      if (c.reply !== undefined) {
+        if (c.go === undefined) err(where(`${cc}: reply needs a go`));
+        for (const t of toArr(c.reply)) if (typeof t !== 'string') checkCond(t.if, cc + ' reply');
+      } else if ((toArr(c.fx).length || c.cost) && c.go !== undefined && !sc.battle && !/^(night_hub|vault_counsel)$/.test(id) && !/^(prologue)$/.test(id)) {
+        const tgt = typeof c.go === 'string' ? c.go : null;
+        const plain = tgt === null || tgt === '@return' || tgt === '@council' || ['stock'].includes(tgt);
+        if (plain) warn(where(`${cc}: has effects but no reply (abrupt)`));
+      }
       for (const r of Object.keys(c.cost || {})) if (!p.resources[r]) err(where(`${cc}: unknown resource "${r}" in cost`));
     });
   }
