@@ -44,3 +44,22 @@ Prologue: reach Cindervale and learn what the king left. → Prepare Cindervale.
 - **Trust** (0 to 10): conversations (council action), battle bonds at 4 and 7, counsel at the Vault, who stays after the chapter.
 - **Standing**: tiers (Reviled, Distrusted, Unknown, Respected, Trusted, Beloved) with effects: muster bonus, volunteers, desertions, who answers the call, the epilogue.
 - **Every choice has an aftermath** (`reply`): dialogue plus consequence before the story moves on.
+
+
+## The truth underneath (as of Chapter Two)
+- **Cindervale Station** is a colony ship in orbit; its mind is the **Heartfire**. Aldmere is the surface colony, seeded from it three hundred years ago. The settlers forgot.
+- The **Ember** was the Heartfire's beacon on the surface, a shard of its heart (the **Veil-stone**) sent down in the first landing. It called for the **Lantern Fleet** to come and find the road.
+- The barrows are **lamps** along that road. The **Ashborn** carry a sliver of the same spark; they sicken when the beacon fails.
+- **Orrin put out the Ember himself** with the ring, because it called. He ordered the Vault held, and made **Lucan Vey** run the **Quiet Office** to keep the three powers distrusting one another.
+- Something **answered**: the Fleet. It is not simply a rescue. Its **Lampbearers** (Marshal Auren Vael) treat Aldmere as a lost colony to bring home; the Admiral is harder.
+
+## Chapter Two (three tracks, faction as second axis)
+| Track (Vault choice) | Title | Shape | Ends with |
+| --- | --- | --- | --- |
+| Seal (`ch1_seal`) | The Grey Hand | Spring council, Stonebridge Ford (protect Ansel; if lost he is taken), road to Highmere (arrival differs by faction), the Chamberlain's Tower, Vey's choice (expose / Dunstan decides / turn him / free) | A new blue star in the north: the call was only muffled |
+| Relight (`ch1_relight`) | The Answer | Warm spring, lamp-line lights nightly, the Last Lamp (rivals try to take it), the Lampbearers land; welcome / bargain (trial) / refuse (battle) | The Fleet's Admiral is coming at first snow |
+| Touch (`ch1_veil`) | The Sleepers (Cold Orbit) | Heartfire explains, expedition from Aldmere steps through the stone (by faction), cryo deck vs the Quiet Watch, wake the Commander / let them sleep / ask the Heartfire | The Fleet approaches; a second, older signal exists |
+
+Faction axis in Chapter Two: Regent (Aldous Venn, Under-Secretary Pell), Duchess (Sirene, a herald; her line descends from the Fleet's officers), Marchers (Hettie, Bryn). Each track has a faction-specific event, arrival and allies.
+
+Chapter Two flags to build on in Chapter Three: `ch2_seal_done`, `ch2_relight_done`, `ch2_veil_done`; Seal: `c2_vey_exposed|dead|recruited|free|escaped`, `c2_ansel_taken`, `c2_blade_*`; Relight: `c2_welcome`, `c2_bargain`, `c2_refuse`, `c2_lampfall_won|lost`, `c2_chartered`, `c2_steward`, `c2_stone_given`; Veil: `c2v_woke|slept|asked`, `c2v_welcomed|held|sent`.

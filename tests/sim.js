@@ -72,7 +72,18 @@ function fight(S) {
 }
 
 function play(mode) {
-  const S = E.newState(Math.random() < 0.02 ? 'scifi' : 'fantasy', 'Sim', { easy: !!process.env.EASY });
+  const S = E.newState((Math.random() < 0.02 && !process.env.CH2) ? 'scifi' : 'fantasy', 'Sim', { easy: !!process.env.EASY });
+  if (process.env.CH2) { // jump straight into Chapter Two: CH2=seal|relight|veil
+    const f = pick(['path_loyalist', 'path_rebel', 'path_independent']);
+    Object.assign(S.flags, { [f]: true, seenPrologue: true, bg_soldier: true, [pick(['dunstan_son_read', 'dunstan_son', 'x1'])]: true, [pick(['kellSpared', 'x2'])]: true });
+    for (const c of ['dunstan', 'ansel', 'isolde', 'kell']) S.party[c] = { trust: Math.floor(Math.random() * 9) };
+    Object.assign(S.res, { gold: 4, grain: 5, levies: 4, standing: Math.floor(Math.random() * 8) - 2 });
+    S.flags['ch1_' + process.env.CH2] = true;
+    if (process.env.CH2 === 'veil') {
+      S.pack = 'scifi'; S.res = {}; for (const [k, d] of Object.entries(AC.packs.scifi.resources)) S.res[k] = d.start || 0;
+      E.enterScene(S, 'wake');
+    } else E.enterScene(S, process.env.CH2 === 'seal' ? 'c2s_open' : 'c2r_open');
+  }
   const trail = [], battles = [];
   let steps = 0;
   while (steps++ < 900) {

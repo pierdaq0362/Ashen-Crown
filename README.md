@@ -4,6 +4,8 @@ A narrative strategy game that runs in the browser. You read, choose, run a smal
 
 **Chapter One: Cinders at the Gate** (v0.2) is playable start to finish. The king is dead, the Ember that kept the dead asleep has gone out, and you hold a ruined keep and a sealed vault. Every decision now gets an aftermath scene, trust and Standing have real effects, and a Goal line under the header always tells you what you are working towards.
 
+**Chapter Two** follows from the Vault choice, in three tracks: Seal (*The Grey Hand*), Relight (*The Answer*) and Touch (*The Sleepers*, in the sci-fi pack), each shaped by the faction you backed.
+
 The final choice in the Vault and the faction you backed are saved as story flags (`ch1_seal`, `ch1_relight`, `ch1_veil`, `path_loyalist`, `path_rebel`, `path_independent`), which Chapter Two builds on. See `docs/story-bible.md`. There are three battles, two realm councils, four companions, three factions to side with, and several endings. One ending crosses into a sci-fi prototype pack, to show how the world can grow past fantasy.
 
 No build step and no dependencies. It is plain HTML, CSS and JavaScript.
@@ -70,6 +72,7 @@ js/engine.js      story, flags, councils, saves (no DOM)
 js/ui.js          screens and input (the only file that touches the page)
 data/fantasy.js   the fantasy world: units, actions, councils, battles, codex
 data/ch1-*.js     Chapter One's scenes (keep, banners, companion conversations)
+data/ch2-*.js     Chapter Two: shared world, Seal, Relight and (sci-fi) Veil tracks
 data/scifi.js     the sci-fi prototype pack
 tests/            content validator and playthrough simulator (Node)
 ```
@@ -179,6 +182,7 @@ Needs Node 18 or newer. No installs.
 node tests/validate.js        # broken routes, unknown units, bad maps, unreachable scenes, stacked units
 node tests/sim.js 1000        # plays the whole game 1000 times; reports crashes, endings and battle win-rates
 EASY=1 node tests/sim.js 1000 # the same in Story mode
+CH2=seal node tests/sim.js 500 # jump straight into Chapter Two (seal | relight | veil)
 ```
 
 Run `validate.js` after every content edit. It catches typos that would otherwise only show up when a player reaches that scene.
@@ -190,7 +194,7 @@ Run `validate.js` after every content edit. It catches typos that would otherwis
 - Enemy AI is a one-turn heuristic: it focuses weak targets and favours cover, but it doesn't plan ahead.
 - There is no audio and no custom art. Units are emoji and the board is CSS.
 - Saves from before v0.2 cannot be loaded (the story changed); start a new game.
-- Only Chapter One is written. The sci-fi pack is a short prototype: one council, one battle.
+- Chapters One and Two are written. Chapter Two has not been playtested by hand yet. The sci-fi pack is a short prototype: one council, one battle.
 
 ## Ideas for what next
 

@@ -16,9 +16,10 @@ const toArr = (x) => (x == null ? [] : Array.isArray(x) ? x : [x]);
 const FX_KEYS = ['res', 'set', 'unset', 'inc', 'trust', 'join', 'leave', 'chron', 'day', 'level', 'bg', 'travel', 'goal', 'when', 'then', 'else'];
 const COND_KEYS = ['any', 'all', 'not', 'res', 'trust', 'n', 'has', 'visited', 'wounded', 'gte', 'gt', 'lte', 'lt', 'eq'];
 
+const SHARED_SET = new Set(); // flags carry across packs (a fantasy flag can be tested in the sci-fi pack)
 for (const [pid, p] of Object.entries(AC.packs)) {
   const where = (m) => `[${pid}] ${m}`;
-  const setFlags = new Set(), testedFlags = new Set(), edges = new Map();
+  const setFlags = SHARED_SET, testedFlags = new Set(), edges = new Map();
   const edge = (from, to) => { if (!edges.has(from)) edges.set(from, new Set()); edges.get(from).add(to); };
 
   const checkCond = (c, ctx) => {

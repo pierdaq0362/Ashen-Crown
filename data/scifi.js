@@ -1,6 +1,7 @@
 /* The Ashen Crown — "Cold Orbit" (sci-fi prototype pack).
  *
  * Reached by touching the Veil-stone at the end of Chapter One (or by opening index.html?pack=scifi).
+ * Chapter Two for this track lives in data/ch2-veil.js.
  * It reuses the same engine with a different set of resources, units and terrain.
  * Companions carry over by id (dunstan, ansel, isolde, kell), as echoes of themselves.
  */
@@ -89,7 +90,7 @@
     scenes: {
       wake: {
         title: 'Cold Orbit', mood: 'vault',
-        enter: [{ chron: 'You crossed the Veil and woke aboard a dead station.' }],
+        enter: [{ chron: 'You crossed the Veil and woke aboard a dead station.' }, { goal: 'Find out where you are, and who is listening.' }],
         text: [
           'You wake on a floor of black glass. Above is a dome of stars, the wrong stars, and the air tastes of cold metal and old ash.',
           'A voice, flat and kind, speaks from everywhere at once. *HEARTFIRE RESERVE AT ZERO POINT THREE PERCENT. WELCOME BACK, CREW.*',
@@ -122,15 +123,6 @@
       },
       airlock_battle: { title: 'The Airlock Ring', mood: 'vault', battle: 'airlock', win: 'station_win', lose: 'station_lose', text: [] },
 
-      station_win: {
-        title: 'Lights Up', mood: 'vault', end: true,
-        enter: [{ chron: 'You cleared the airlock ring of Cindervale Station.' }],
-        text: [
-          'The last drone falls. One by one the dark panels along the hall begin to glow, and a map unfolds across the dome: a thousand stars, and one of them marked, patiently, in blue.',
-          'The Heartfire speaks softly. “Thank you, Captain. We have a long way to go.”',
-          'This is where the prototype ends. The world of the Ashen Crown continues here, in a different sky.',
-        ],
-      },
       station_lose: {
         title: 'Sleep', mood: 'night', end: true,
         text: ['The drones drive you back. The station sleeps again, and waits. It is very good at waiting.'],

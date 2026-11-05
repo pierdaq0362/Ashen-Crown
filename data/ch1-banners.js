@@ -295,7 +295,7 @@
 
     /* ======================= EPILOGUE ======================= */
     epilogue: {
-      title: 'What the Morning Left', mood: 'snow', end: true,
+      title: 'What the Morning Left', mood: 'snow',
       enter: [{ day: 3 }, { chron: 'The morning after the Vault: the banners, the company and the north each took stock.' }],
       text: [
         'Three days later, the great hall of Cindervale is quiet. You sit with the maps and the unpaid bills and think about what you have done.',
@@ -316,6 +316,7 @@
         '**What now?** The Vault is settled, for now. But the Grey Hand is still out there, someone sold Cindervale’s walls, and the shard’s hum has not entirely left the stones. The Ember answered something. Whatever it was, it has not forgotten the answer.',
         'Chapter One ends here. What you chose in the Vault, and who you stood beside, will shape what comes next.',
       ],
+      choices: [{ t: 'On to Chapter Two.', go: [{ if: 'ch1_seal', go: 'c2s_open' }, { go: 'c2r_open' }] }],
     },
   } });
 })();
